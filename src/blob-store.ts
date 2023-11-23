@@ -113,9 +113,7 @@ async function blob_store(this: any, options: any) {
       const co = get_container(msg.ent)
       let blob_id = make_blob_id(id, msg.ent, options)
       
-      
       do_delete()
-      
       
       async function do_delete() {
         let container_client = await load_container_client(co.name)
