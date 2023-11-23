@@ -108,12 +108,12 @@ async function blob_store(this: any, options: any) {
     },
     remove: function (msg: any, reply: any) {
       let qent = msg.qent
-      let id = '' + msg.q.id
+      let qid = '' + msg.q.id
       
       const co = get_container(msg.ent)
-      let blob_id = make_blob_id(id, msg.ent, options)
+      let blob_id = make_blob_id(qid, msg.ent, options)
       
-      if (null == msg.q.id) {
+      if (null == qid) {
         return reply()
       }
       
