@@ -66,10 +66,10 @@ async function blob_store(this: any, options: any) {
       
       async function do_upload() {
         let container_client = await load_container_client(co.name)
-        let block_blob_client = container_client.getBlockBlobClient(blob_id)
+        let block_blob = container_client.getBlockBlobClient(blob_id)
         let dataBuffer = Buffer.from(dj)
         try {
-          await block_blob_client.uploadData(dataBuffer, dataBuffer.length)
+          await block_blob.uploadData(dataBuffer, dataBuffer.length)
           let ento = msg.ent.make$().data$(d)
           reply(null, ento)
         } catch(err) {
@@ -89,10 +89,11 @@ async function blob_store(this: any, options: any) {
       
       async function do_download() {
         let container_client = await load_container_client(co.name)
-        let block_blob_client = container_client.getBlockBlobClient(blob_id)
+        let block_blob = container_client.getBlockBlobClient(blob_id)
         try {
-          let d = (await block_blob_client.downloadToBuffer()).toString()
-          let ento = qent.make$().data$(JSON.parse(d))
+          let d = await block_blob.downloadToBuffer()
+          let d_s = d.toString()
+          let ento = qent.make$().data$(JSON.parse(d_s))
           reply(null, ento)
         } catch(err: any) {
           if (err && 'BlobNotFound' == err.details.errorCode) {
