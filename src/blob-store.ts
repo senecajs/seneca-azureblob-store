@@ -41,7 +41,8 @@ async function blob_store(this: any, options: any) {
   
   async function load_container_client(name: string) {
     let container_client = blob_client.getContainerClient(name)
-    if (!(await container_client.exists()) ) {
+    let exists: boolean = await container_client.exists()
+    if (!exists) {
       await container_client.create()
     }
     return container_client
