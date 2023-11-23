@@ -128,3 +128,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# blob config files
+__azurite_db_blob_extent__.json
+__azurite_db_blob__.json
+__blobstorage__/
