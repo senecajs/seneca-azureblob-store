@@ -113,6 +113,10 @@ async function blob_store(this: any, options: any) {
       const co = get_container(msg.ent)
       let blob_id = make_blob_id(id, msg.ent, options)
       
+      if (null == msg.q.id) {
+        return reply()
+      }
+      
       do_delete()
       
       async function do_delete() {
