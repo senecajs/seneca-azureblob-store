@@ -1,6 +1,6 @@
 /* Copyright (c) 2023 Richard Rodger, MIT License */
 
-import { Skip, Any } from 'gubu'
+import { Default, Skip, Any, Exact, Child } from 'gubu'
 
 import {
   DefaultAzureCredential
@@ -13,10 +13,23 @@ import {
 
 blob_store.defaults = {
   prefix: 'seneca/db01/',
-  folder: Any(''),
+  folder: Any(),
   blob: Skip({}),
   map: Skip({}),
   shared: Skip({}),
+  
+  // keys are canon strings
+  ent: Default(
+    {},
+    Child({
+      // Save a sub array as JSONL. NOTE: Other fields are LOST!
+      jsonl: Skip(String),
+
+      // Save a sub field as binary. NOTE: Other fields are LOST!
+      bin: Skip(String),
+    }),
+  ),
+  
 }
 
 async function blob_store(this: any, options: any) {
@@ -34,7 +47,7 @@ async function blob_store(this: any, options: any) {
     let container: any = {}
       
     let canon = ent.canon$({ object: true })
-    container.name = (null != canon.base ? canon.base + '_' : '') + canon.name
+    container.name = (null != canon.base ? canon.base + '-' : '') + canon.name
       
     return container
   }
@@ -51,25 +64,59 @@ async function blob_store(this: any, options: any) {
   let store = {
     name: 'blob-store',
     save: function (msg: any, reply: any) {
+    
+      let canon = msg.ent.entity$
       let id = '' + (msg.ent.id || msg.ent.id$ || generate_id(msg.ent))
       let d = msg.ent.data$()
       d.id = id
-      let dj = JSON.stringify(d)
 
       let blob_id = make_blob_id(id, msg.ent, options)
       let co = get_container(msg.ent)
       
+      let Body: Buffer | undefined = undefined
+      let entSpec = options.ent[canon]
+      
       // console.log('blob_id: ', blob_id)
       // console.log('co: ', co)
+      
+      if (entSpec || msg.jsonl$ || msg.bin$) {
+        let jsonl = entSpec?.jsonl || msg.jsonl$
+        let bin = entSpec?.bin || msg.bin$
+
+        if ('string' === typeof jsonl && '' !== jsonl) {
+          let arr = msg.ent[jsonl]
+          if (!Array.isArray(arr)) {
+            throw new Error(
+              'blob-store: option ent.jsonl array field not found: ' + jsonl,
+            )
+          }
+
+          let content = arr.map((n: any) => JSON.stringify(n)).join('\n') + '\n'
+          Body = Buffer.from(content)
+        } else if ('string' === typeof bin && '' !== bin) {
+          let data = msg.ent[bin]
+          if (null == data) {
+            throw new Error(
+              'blob-store: option ent.bin data field not found: ' + bin,
+            )
+          }
+
+          Body = Buffer.from(data)
+        }
+      }
+
+      if (null == Body) {
+        let dj = JSON.stringify(d)
+        Body = Buffer.from(dj)
+      }
       
       do_upload()
       
       async function do_upload() {
         let container_client = await load_container_client(co.name)
         let block_blob = container_client.getBlockBlobClient(blob_id)
-        let dataBuffer = Buffer.from(dj)
         try {
-          await block_blob.uploadData(dataBuffer, dataBuffer.length)
+          Body && await block_blob.uploadData(Body, Body.length)
           let ento = msg.ent.make$().data$(d)
           reply(null, ento)
         } catch(err) {
@@ -79,11 +126,21 @@ async function blob_store(this: any, options: any) {
       }
     },
     load: function (msg: any, reply: any) {
+    
+      let canon = msg.ent.entity$
       let qent = msg.qent
       let id = '' + msg.q.id
 
       const co = get_container(msg.ent)
       let blob_id = make_blob_id(id, msg.ent, options)
+      
+      let entSpec = options.ent[canon]
+      let output: 'ent' | 'jsonl' | 'bin' = 'ent'
+
+      let jsonl = entSpec?.jsonl || msg.jsonl$ || msg.q.jsonl$
+      let bin = entSpec?.bin || msg.bin$ || msg.q.bin$
+
+      output = jsonl && '' != jsonl ? 'jsonl' : bin && '' != bin ? 'bin' : 'ent'
       
       do_download()
       
@@ -91,10 +148,31 @@ async function blob_store(this: any, options: any) {
         let container_client = await load_container_client(co.name)
         let block_blob = container_client.getBlockBlobClient(blob_id)
         try {
-          let d = await block_blob.downloadToBuffer()
-          let d_s = d.toString()
-          let ento = qent.make$().data$(JSON.parse(d_s))
+          // let body: any = await block_blob.downloadToBuffer()
+          const downloadBlockBlobResponse = await block_blob.download(0);
+          let body: any = await destream(output,
+            downloadBlockBlobResponse.readableStreamBody)
+          
+          let entdata: any = {}
+
+          // console.log('DES', output, body)
+
+          if ('jsonl' === output) {
+            entdata[jsonl] = body
+              .split('\n')
+              .filter((n: string) => '' !== n)
+              .map((n: string) => JSON.parse(n))
+          } else if ('bin' === output) {
+            entdata[bin] = body
+          } else {
+            entdata = JSON.parse(body)
+          }
+
+          entdata.id = id
+
+          let ento = qent.make$().data$(entdata)
           reply(null, ento)
+                
         } catch(err: any) {
           if (err && 'BlobNotFound' == err.details.errorCode) {
             return reply()
@@ -188,6 +266,22 @@ function make_blob_id(id: string, ent: any, options: any) {
         '/' +
         id +
         '.json'
+}
+
+async function destream(output: 'ent' | 'jsonl' | 'bin', readable: any) {
+  return new Promise((resolve, reject) => {
+    const chunks: any = []
+    readable.on('data', (chunk: any) => chunks.push(chunk))
+    readable.on('error', reject)
+    readable.on('end', () => {
+      let buffer = Buffer.concat(chunks)
+      if ('bin' === output) {
+        resolve(buffer)
+      } else {
+        resolve(buffer.toString('utf-8'))
+      }
+    })
+  })
 }
 
 Object.defineProperty(blob_store, 'name', { value: 'blob-store' })

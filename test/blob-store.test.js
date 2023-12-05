@@ -52,20 +52,112 @@ lab.test('happy', async function () {
 })
 
 Shared.test.init(lab, test_opts)
+Shared.test.keyvalue(lab, test_opts)
 
+lab.test('jsonl', async function () {
+  let options = Seneca.util.deep(test_opts.options, {
+    ent: {
+      '-/optent/color': { jsonl: 'parts' },
+      '-/directive/color': { jsonl: 'parts' }
+    },
+    /*
+    local: {
+      active: true,
+      folder: __dirname+'/s3files',
+      folderSuffix: 'none'
+    }
+    */
+  })
 
-lab.describe('keyvalue', () => {
   let s0 = Seneca({ legacy: false })
     .test()
     .use('promisify')
     .use('entity', { mem_store: false })
-    .use(Plugin, {
-      blob: {
-        mode: 'local'
-      },
-    })
-    
-  lab.before(() => s0.ready())
-  
-  Shared.test.keyvalue(lab, { seneca: s0, ent0: 'ent0' })
+    .use(Plugin, options)
+
+  let color0 = await s0.entity('optent/color').save$({
+    parts: [{ val: 50 }, { val: 100 }, { val: 150 }],
+  })
+
+  expect(color0).includes({
+    parts: [{ val: 50 }, { val: 100 }, { val: 150 }],
+  })
+
+  let color0r = await s0.entity('optent/color').load$(color0.id)
+  expect(color0r).includes({
+    id: color0.id,
+    parts: [{ val: 50 }, { val: 100 }, { val: 150 }],
+  })
+
+  let color1 = await s0.entity('directive/color').save$({
+    directive$: { jsonl$: 'parts' },
+    parts: [{ val: 50 }, { val: 100 }, { val: 150 }],
+  })
+
+  expect(color1).includes({
+    parts: [{ val: 50 }, { val: 100 }, { val: 150 }],
+  })
+
+  let color1r = await s0.entity('directive/color').load$({
+    id: color1.id,
+    jsonl$: 'parts',
+  })
+  expect(color1r).includes({
+    id: color1.id,
+    parts: [{ val: 50 }, { val: 100 }, { val: 150 }],
+  })
+})
+
+lab.test('bin', async function () {
+  let options = Seneca.util.deep(test_opts.options, {
+    ent: {
+      '-/optent/planet': { bin: 'map' },
+      '-/directive/planet': { bin: 'map' }
+    },
+    /*
+    local: {
+      active: true,
+      folder: __dirname+'/s3files',
+      folderSuffix: 'none'
+    }
+    */
+  })
+
+  let s0 = Seneca({ legacy: false })
+    .test()
+    .use('promisify')
+    .use('entity', { mem_store: false })
+    .use(Plugin, options)
+
+  let planet0 = await s0.entity('optent/planet').save$({
+    map: Buffer.from([1, 2, 3]),
+  })
+
+  expect(planet0).includes({
+    map: Buffer.from([1, 2, 3]),
+  })
+
+  let planet0r = await s0.entity('optent/planet').load$(planet0.id)
+  expect(planet0r).includes({
+    id: planet0.id,
+    map: Buffer.from([1, 2, 3]),
+  })
+
+  let planet1 = await s0.entity('directive/planet').save$({
+    directive$: { bin$: 'map' },
+    map: Buffer.from([1, 2, 3]),
+  })
+
+  expect(planet1).includes({
+    map: Buffer.from([1, 2, 3]),
+  })
+
+  let planet1r = await s0.entity('directive/planet').load$({
+    id: planet1.id,
+    bin$: 'map',
+  })
+  expect(planet1r).includes({
+    id: planet1.id,
+    map: Buffer.from([1, 2, 3]),
+  })
 })
