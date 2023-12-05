@@ -1,5 +1,8 @@
 /* Copyright (c) 2023 Richard Rodger, MIT License */
 
+import Path from 'path'
+import Fs from 'fs/promises'
+
 import { Default, Skip, Any, Exact, Child } from 'gubu'
 
 import {
@@ -17,6 +20,12 @@ blob_store.defaults = {
   blob: Skip({}),
   map: Skip({}),
   shared: Skip({}),
+  
+  local: Skip({
+    active: Default(false, Boolean),
+    folder: Skip(String),
+    folderSuffix: Exact('none', 'genid')
+  }),
   
   // keys are canon strings
   ent: Default(
@@ -38,6 +47,7 @@ async function blob_store(this: any, options: any) {
 
   let generate_id = options.generate_id || seneca.export('entity/generate_id')
   let blob_client: any = null
+  let local_folder: string = ''
   let blob_shared_options = {
     // Bucket: '!not-a-bucket!',
     // ...options.shared,
@@ -110,7 +120,30 @@ async function blob_store(this: any, options: any) {
         Body = Buffer.from(dj)
       }
       
-      do_upload()
+      if(options.local?.active) {
+        
+        let full: string = Path.join(local_folder, blob_id || id)
+        let path: string = Path.dirname(full)
+        
+        // console.log('dirname: ', path )
+        Fs.mkdir(path, { recursive: true })
+          .then((out: any) => {
+            Body && Fs.writeFile(full, Body)
+              .then((_res: any) => {
+                let ento = msg.ent.make$().data$(d)
+                reply(null, ento)
+              })
+              .catch((err: any) => {
+                 reply(err)
+            })
+        })
+        .catch((err: any) => {
+          reply(err)
+        })
+      }
+      else {
+        do_upload()
+      }
       
       async function do_upload() {
         let container_client = await load_container_client(co.name)
@@ -142,7 +175,48 @@ async function blob_store(this: any, options: any) {
 
       output = jsonl && '' != jsonl ? 'jsonl' : bin && '' != bin ? 'bin' : 'ent'
       
-      do_download()
+      
+      if(options.local?.active) {
+        
+        let full: string = Path.join(local_folder, blob_id || id)
+
+        Fs.readFile(full)
+          .then((body: any) => {
+          
+            let entdata: any = {}
+
+            // console.log('DES', output, body)
+            if ('bin' !== output) {
+              body = body.toString('utf-8')
+            }
+
+            if ('jsonl' === output) {
+              entdata[jsonl] = body
+                .split('\n')
+                .filter((n: string) => '' !== n)
+                .map((n: string) => JSON.parse(n))
+            } else if ('bin' === output) {
+              entdata[bin] = body
+            } else {
+              entdata = JSON.parse(body)
+            }
+
+            entdata.id = id
+
+            let ento = qent.make$().data$(entdata)
+            reply(null, ento)
+          })
+          .catch((err: any) => {
+            if ('ENOENT' == err.code) {
+              return reply()
+            }
+            reply(err)
+          })
+            
+      }
+      else {
+        do_download()
+      }
       
       async function do_download() {
         let container_client = await load_container_client(co.name)
@@ -196,7 +270,24 @@ async function blob_store(this: any, options: any) {
         return reply()
       }
       
-      do_delete()
+      if(options.local?.active) {
+        
+        let full: string = Path.join(local_folder, blob_id || qid)
+        
+        Fs.unlink(full)
+          .then((_res: any) => {
+            reply()
+          })
+          .catch((err: any) => {
+            if ('ENOENT' == err.code) {
+              return reply()
+            }
+            reply(err)
+          })
+      }
+      else {
+        do_delete()
+      }
       
       async function do_delete() {
         let container_client = await load_container_client(co.name)
@@ -228,6 +319,13 @@ async function blob_store(this: any, options: any) {
 
     const blob_opts = {
       ...options.blob,
+    }
+    
+    if (options.local?.active) {
+      let folder: string = options.local.folder
+      local_folder = 'genid' == options.local.folderSuffix ? 
+        folder+'-'+seneca.util.Nid() : folder
+      return reply()
     }
     
     if('local' == blob_opts.mode) { 
