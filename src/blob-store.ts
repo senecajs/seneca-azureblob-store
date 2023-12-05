@@ -1,9 +1,9 @@
 /* Copyright (c) 2023 Richard Rodger, MIT License */
 
 import Path from 'path'
-import Fs from 'fs/promises'
+import Fsp from 'fs/promises'
 
-import { Default, Skip, Any, Exact, Child } from 'gubu'
+import { Default, Skip, Any, Exact, Child, Empty } from 'gubu'
 
 import {
   DefaultAzureCredential
@@ -15,17 +15,18 @@ import {
 } from '@azure/storage-blob'
 
 blob_store.defaults = {
-  prefix: 'seneca/db01/',
+  prefix: Empty('seneca/db01/'),
+  suffix: Empty('.json'),
   folder: Any(),
   blob: Skip({}),
   map: Skip({}),
   shared: Skip({}),
   
-  local: Skip({
-    active: Default(false, Boolean),
-    folder: Skip(String),
-    folderSuffix: Exact('none', 'genid')
-  }),
+  local: {
+    active: false,
+    folder: '',
+    suffixMode: 'none',
+  },
   
   // keys are canon strings
   ent: Default(
@@ -92,7 +93,8 @@ async function blob_store(this: any, options: any) {
       if (entSpec || msg.jsonl$ || msg.bin$) {
         let jsonl = entSpec?.jsonl || msg.jsonl$
         let bin = entSpec?.bin || msg.bin$
-
+	
+	// JSONL files
         if ('string' === typeof jsonl && '' !== jsonl) {
           let arr = msg.ent[jsonl]
           if (!Array.isArray(arr)) {
@@ -102,8 +104,10 @@ async function blob_store(this: any, options: any) {
           }
 
           let content = arr.map((n: any) => JSON.stringify(n)).join('\n') + '\n'
-          Body = Buffer.from(content)
-        } else if ('string' === typeof bin && '' !== bin) {
+          Body = Buffer.from(content)          
+        }
+        // Binary Files
+        else if ('string' === typeof bin && '' !== bin) {
           let data = msg.ent[bin]
           if (null == data) {
             throw new Error(
@@ -120,17 +124,18 @@ async function blob_store(this: any, options: any) {
         Body = Buffer.from(dj)
       }
       
-      if(options.local?.active) {
+      let ento = msg.ent.make$().data$(d)
+      
+      if(options.local.active) {
         
         let full: string = Path.join(local_folder, blob_id || id)
         let path: string = Path.dirname(full)
         
         // console.log('dirname: ', path )
-        Fs.mkdir(path, { recursive: true })
+        Fsp.mkdir(path, { recursive: true })
           .then((out: any) => {
-            Body && Fs.writeFile(full, Body)
+            Body && Fsp.writeFile(full, Body as any)
               .then((_res: any) => {
-                let ento = msg.ent.make$().data$(d)
                 reply(null, ento)
               })
               .catch((err: any) => {
@@ -150,7 +155,6 @@ async function blob_store(this: any, options: any) {
         let block_blob = container_client.getBlockBlobClient(blob_id)
         try {
           Body && await block_blob.uploadData(Body, Body.length)
-          let ento = msg.ent.make$().data$(d)
           reply(null, ento)
         } catch(err) {
           reply(err, null)
@@ -175,36 +179,38 @@ async function blob_store(this: any, options: any) {
 
       output = jsonl && '' != jsonl ? 'jsonl' : bin && '' != bin ? 'bin' : 'ent'
       
-      
-      if(options.local?.active) {
+      function replyEnt(body: any) {
+        let entdata: any = {}
+
+        // console.log('DES', output, body)
+        if ('bin' !== output) {
+          body = body.toString('utf-8')
+        }
         
+        if ('jsonl' === output) {
+          entdata[jsonl] = body
+            .split('\n')
+            .filter((n: string) => '' !== n)
+            .map((n: string) => JSON.parse(n))
+        } else if ('bin' === output) {
+          entdata[bin] = body
+        } else {
+          entdata = JSON.parse(body)
+        }
+
+        entdata.id = id
+
+        let ento = qent.make$().data$(entdata)
+        reply(null, ento)
+      }
+      
+      
+      if(options.local.active) {
         let full: string = Path.join(local_folder, blob_id || id)
 
-        Fs.readFile(full)
+        Fsp.readFile(full)
           .then((body: any) => {
-          
-            let entdata: any = {}
-
-            // console.log('DES', output, body)
-            if ('bin' !== output) {
-              body = body.toString('utf-8')
-            }
-
-            if ('jsonl' === output) {
-              entdata[jsonl] = body
-                .split('\n')
-                .filter((n: string) => '' !== n)
-                .map((n: string) => JSON.parse(n))
-            } else if ('bin' === output) {
-              entdata[bin] = body
-            } else {
-              entdata = JSON.parse(body)
-            }
-
-            entdata.id = id
-
-            let ento = qent.make$().data$(entdata)
-            reply(null, ento)
+            replyEnt(body)
           })
           .catch((err: any) => {
             if ('ENOENT' == err.code) {
@@ -227,25 +233,7 @@ async function blob_store(this: any, options: any) {
           let body: any = await destream(output,
             downloadBlockBlobResponse.readableStreamBody)
           
-          let entdata: any = {}
-
-          // console.log('DES', output, body)
-
-          if ('jsonl' === output) {
-            entdata[jsonl] = body
-              .split('\n')
-              .filter((n: string) => '' !== n)
-              .map((n: string) => JSON.parse(n))
-          } else if ('bin' === output) {
-            entdata[bin] = body
-          } else {
-            entdata = JSON.parse(body)
-          }
-
-          entdata.id = id
-
-          let ento = qent.make$().data$(entdata)
-          reply(null, ento)
+          replyEnt(body)
                 
         } catch(err: any) {
           if (err && 'BlobNotFound' == err.details.errorCode) {
@@ -270,11 +258,11 @@ async function blob_store(this: any, options: any) {
         return reply()
       }
       
-      if(options.local?.active) {
-        
+      // Local file
+      if(options.local.active) {
         let full: string = Path.join(local_folder, blob_id || qid)
         
-        Fs.unlink(full)
+        Fsp.unlink(full)
           .then((_res: any) => {
             reply()
           })
@@ -307,8 +295,8 @@ async function blob_store(this: any, options: any) {
     close: function (msg: any, reply: () => void) {
       reply()
     },
-    native: function (msg: any, reply: () => void) {
-      reply()
+    native: function (msg: any, reply: any) {
+      reply({ client: blob_client, local: { ...options.local } } )
     },
   }
 
@@ -321,10 +309,12 @@ async function blob_store(this: any, options: any) {
       ...options.blob,
     }
     
-    if (options.local?.active) {
+    if (options.local.active) {
       let folder: string = options.local.folder
-      local_folder = 'genid' == options.local.folderSuffix ? 
-        folder+'-'+seneca.util.Nid() : folder
+      local_folder =
+        'genid' == options.local.suffixMode
+          ? folder + '-' + seneca.util.Nid()
+          : folder
       return reply()
     }
     
@@ -358,12 +348,17 @@ async function blob_store(this: any, options: any) {
 }
 
 function make_blob_id(id: string, ent: any, options: any) {
-  return null == id
-    ? null
-    : (null == options.folder ? options.prefix + ent.entity$ : options.folder) +
-        '/' +
+  let blobid =
+    null == id
+      ? null
+      : (null == options.folder
+          ? options.prefix + ent.entity$
+          : options.folder) +
+        ('' == options.folder ? '' : '/') +
         id +
-        '.json'
+          options.suffix
+
+  return blobid
 }
 
 async function destream(output: 'ent' | 'jsonl' | 'bin', readable: any) {
