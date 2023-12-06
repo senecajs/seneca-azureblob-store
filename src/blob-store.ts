@@ -325,11 +325,12 @@ async function blob_store(this: any, options: any) {
       
     } else {
       const account = blob_opts.account
-      const defaultAzureCredential = new DefaultAzureCredential()
+      const accountKey = blob_opts.key
+      const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
     
       blob_client = new BlobServiceClient(
         `https://${account}.blob.core.windows.net`,
-        defaultAzureCredential
+        sharedKeyCredential
       )
       
     }
