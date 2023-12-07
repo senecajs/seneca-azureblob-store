@@ -324,6 +324,9 @@ async function blob_store(this: any, options: any) {
       blob_client = BlobServiceClient.fromConnectionString(connectionString)
       
     } else {
+      blob_client = BlobServiceClient.fromConnectionString(blob_opts.connectionString)
+
+    /*
       const account = blob_opts.account
       const accountKey = blob_opts.key
       const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
@@ -332,6 +335,7 @@ async function blob_store(this: any, options: any) {
         `https://${account}.blob.core.windows.net`,
         sharedKeyCredential
       )
+    */
       
     }
     
