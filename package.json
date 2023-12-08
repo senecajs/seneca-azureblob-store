@@ -1,6 +1,6 @@
 {
   "name": "@seneca/azure-blob-store",
-  "version": "0.2.0",
+  "version": "0.0.1",
   "description": "Entity store using Azure Blob Storage. Note: *not* for arbitrary binaries, just for Seneca data entities.",
   "main": "dist/blob-store.js",
   "type": "commonjs",

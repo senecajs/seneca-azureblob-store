@@ -9,7 +9,7 @@ async function run() {
     .use('entity', { mem_store: false })
     .use('..', {
       blob: {
-        mode: 'local'
+        mode: 'local',
       },
     })
 

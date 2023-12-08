@@ -21,15 +21,15 @@ const deep = Seneca.util.deep
 const Plugin = require('..')
 
 const test_opts = {
-  name: 'blob-store'
+  name: 'blob-store',
 }
 
 lab.before(async function () {
   test_opts.options = {
     blob: {
       mode: 'local',
-      endpoint: 'http://127.0.0.1:10000/devstoreaccount1'
-    }
+      endpoint: 'http://127.0.0.1:10000/devstoreaccount1',
+    },
   }
 
   // test_opts.seneca = Seneca({ require })
@@ -46,7 +46,7 @@ lab.test('happy', async function () {
     .use('entity', { mem_store: false })
     .use(Plugin, {
       blob: {
-        mode: 'local'
+        mode: 'local',
       },
     })
 
@@ -62,10 +62,10 @@ const local_opts = {
   options: {
     local: {
       active: true,
-      folder: __dirname+'/blobfiles/data',
-      suffixMode: 'genid'
-    }
-  }
+      folder: __dirname + '/blobfiles/data',
+      suffixMode: 'genid',
+    },
+  },
 }
 
 lab.before(async function () {
@@ -82,8 +82,8 @@ lab.test('jsonl-blob', async function () {
   let options = Seneca.util.deep(test_opts.options, {
     ent: {
       '-/optent/color': { jsonl: 'parts' },
-      '-/directive/color': { jsonl: 'parts' }
-    }
+      '-/directive/color': { jsonl: 'parts' },
+    },
   })
 
   let s0 = Seneca({ legacy: false })
@@ -132,7 +132,7 @@ lab.test('jsonl-blob-customid', async function () {
       ent: {
         '-/optent/color': { jsonl: 'parts' },
       },
-    }),
+    })
   )
 
   let color2 = await s0.entity('optent/color').save$({
@@ -151,7 +151,7 @@ lab.test('jsonl-local-basic', async function () {
   let options = Seneca.util.deep(test_opts.options, {
     ent: {
       '-/optent/color': { jsonl: 'parts' },
-      '-/directive/color': { jsonl: 'parts' }
+      '-/directive/color': { jsonl: 'parts' },
     },
     local: {
       active: true,
@@ -203,8 +203,8 @@ lab.test('bin-blob-basic', async function () {
   let options = Seneca.util.deep(test_opts.options, {
     ent: {
       '-/optent/planet': { bin: 'map' },
-      '-/directive/planet': { bin: 'map' }
-    }
+      '-/directive/planet': { bin: 'map' },
+    },
   })
 
   let s0 = Seneca({ legacy: false })
@@ -310,7 +310,7 @@ lab.test('bin-local-customid', async function () {
         folder: __dirname + '/blobfiles/data',
         suffixMode: 'genid',
       },
-    }),
+    })
   )
 
   let planet0 = await s0.entity('optent/planet').save$({
