@@ -9,7 +9,9 @@ import { DefaultAzureCredential } from '@azure/identity'
 
 import {
   BlobServiceClient,
-  StorageSharedKeyCredential,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions,
+  StorageSharedKeyCredential
 } from '@azure/storage-blob'
 
 blob_store.defaults = {
@@ -331,6 +333,56 @@ async function blob_store(this: any, options: any) {
   }
 
   let meta = init(seneca, options, store)
+  
+  seneca.message(
+    'cloud:azure,service:store,get:url,kind:upload',
+    {
+      container: String,
+      filepath: String,
+      expire: Number,
+    },
+    getSignedUrl('w'),
+  )
+
+  seneca.message(
+    'cloud:azure,service:store,get:url,kind:download',
+    {
+      container: String,
+      filepath: String,
+      expire: Number,
+    },
+    getSignedUrl('r'),
+  )
+
+  function getSignedUrl(permission: 'r' | 'w') {
+  
+    return async function(msg: any) {
+      const container = msg.container
+      const filepath = msg.filepath
+      const expire = msg.expire
+      
+      const containerClient = blob_client.getContainerClient(container)
+      const blob = containerClient.getBlobClient(filepath)
+
+      const sasToken = generateBlobSASQueryParameters({
+        containerName: container,
+        blobName: filepath,
+        permissions: BlobSASPermissions.parse(permission),
+        startsOn: new Date(),
+        expiresOn: new Date(expire),
+      }, blob_client.credential).toString()
+
+      const accessUrl = blob.url + "?" + sasToken
+
+      return {
+        url: accessUrl,
+        container,
+        filepath,
+        expire
+      }
+    }
+    
+  }
   
   return {
     name: store.name,
