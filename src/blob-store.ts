@@ -50,7 +50,49 @@ async function blob_store(this: any, options: any) {
     // Bucket: '!not-a-bucket!',
     // ...options.shared,
   }
+  
+  seneca.init(function (reply: () => void) {
+      // BLOB SDK setup
 
+      const blob_opts = {
+        ...options.blob,
+      }
+
+      if (options.local.active) {
+        let folder: string = options.local.folder
+        local_folder =
+          'genid' == options.local.suffixMode
+            ? folder + '-' + seneca.util.Nid()
+            : folder
+        return reply()
+      }
+
+      if ('local' == blob_opts.mode) {
+        const connectionString = `UseDevelopmentStorage=true; BlobEndpoint=${
+          blob_opts.endpoint || 'http://127.0.0.1:10000/devstoreaccount1'
+        }`
+        blob_client = BlobServiceClient.fromConnectionString(connectionString)
+      } else {
+        blob_client = BlobServiceClient.fromConnectionString(
+          blob_opts.connectionString
+        )
+
+        /*
+      const account = blob_opts.account
+      const accountKey = blob_opts.key
+      const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
+    
+      blob_client = new BlobServiceClient(
+        `https://${account}.blob.core.windows.net`,
+        sharedKeyCredential
+      )
+    */
+      }
+
+      reply()
+    }
+  )
+  
   function get_container(ent: any) {
     let container: any = {}
 
@@ -289,51 +331,7 @@ async function blob_store(this: any, options: any) {
   }
 
   let meta = init(seneca, options, store)
-
-  seneca.add(
-    { init: store.name, tag: meta.tag },
-    function (msg: any, reply: () => void) {
-      // BLOB SDK setup
-
-      const blob_opts = {
-        ...options.blob,
-      }
-
-      if (options.local.active) {
-        let folder: string = options.local.folder
-        local_folder =
-          'genid' == options.local.suffixMode
-            ? folder + '-' + seneca.util.Nid()
-            : folder
-        return reply()
-      }
-
-      if ('local' == blob_opts.mode) {
-        const connectionString = `UseDevelopmentStorage=true; BlobEndpoint=${
-          blob_opts.endpoint || 'http://127.0.0.1:10000/devstoreaccount1'
-        }`
-        blob_client = BlobServiceClient.fromConnectionString(connectionString)
-      } else {
-        blob_client = BlobServiceClient.fromConnectionString(
-          blob_opts.connectionString
-        )
-
-        /*
-      const account = blob_opts.account
-      const accountKey = blob_opts.key
-      const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
-    
-      blob_client = new BlobServiceClient(
-        `https://${account}.blob.core.windows.net`,
-        sharedKeyCredential
-      )
-    */
-      }
-
-      reply()
-    }
-  )
-
+  
   return {
     name: store.name,
     tag: meta.tag,
