@@ -40,15 +40,15 @@
     "seneca-store-test": "^5.1.0",
     "typescript": "^4.8.4",
     "gubu": "^6.0.1",
-    "seneca": "3.30.1",
+    "seneca": "3.33.0",
     "seneca-store-test": "5.2.0",
-    "seneca-promisify": "3.6.0",
-    "seneca-entity": "22.1.0"
+    "seneca-promisify": "3.7.1",
+    "seneca-entity": "25.1.0"
   },
   "peerDependencies": {
     "@azure/storage-blob": ">=12",
     "seneca": ">=3",
-    "seneca-entity": ">=22",
+    "seneca-entity": ">=25",
     "seneca-promisify": ">=3"
   }
 }
