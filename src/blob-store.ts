@@ -372,7 +372,7 @@ async function blob_store(this: any, options: any) {
         expiresOn: new Date(expire),
       }, blob_client.credential).toString()
 
-      const accessUrl = blob.url + "?" + sasToken
+      const accessUrl = blob.url + '?' + sasToken
 
       return {
         url: accessUrl,
