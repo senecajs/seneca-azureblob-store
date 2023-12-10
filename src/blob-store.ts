@@ -11,7 +11,7 @@ import {
   BlobServiceClient,
   generateBlobSASQueryParameters,
   BlobSASPermissions,
-  StorageSharedKeyCredential
+  StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 
 blob_store.defaults = {
@@ -52,34 +52,34 @@ async function blob_store(this: any, options: any) {
     // Bucket: '!not-a-bucket!',
     // ...options.shared,
   }
-  
+
   seneca.init(function (reply: () => void) {
-      // BLOB SDK setup
+    // BLOB SDK setup
 
-      const blob_opts = {
-        ...options.blob,
-      }
+    const blob_opts = {
+      ...options.blob,
+    }
 
-      if (options.local.active) {
-        let folder: string = options.local.folder
-        local_folder =
-          'genid' == options.local.suffixMode
-            ? folder + '-' + seneca.util.Nid()
-            : folder
-        return reply()
-      }
+    if (options.local.active) {
+      let folder: string = options.local.folder
+      local_folder =
+        'genid' == options.local.suffixMode
+          ? folder + '-' + seneca.util.Nid()
+          : folder
+      return reply()
+    }
 
-      if ('local' == blob_opts.mode) {
-        const connectionString = `UseDevelopmentStorage=true; BlobEndpoint=${
-          blob_opts.endpoint || 'http://127.0.0.1:10000/devstoreaccount1'
-        }`
-        blob_client = BlobServiceClient.fromConnectionString(connectionString)
-      } else {
-        blob_client = BlobServiceClient.fromConnectionString(
-          blob_opts.connectionString
-        )
+    if ('local' == blob_opts.mode) {
+      const connectionString = `UseDevelopmentStorage=true; BlobEndpoint=${
+        blob_opts.endpoint || 'http://127.0.0.1:10000/devstoreaccount1'
+      }`
+      blob_client = BlobServiceClient.fromConnectionString(connectionString)
+    } else {
+      blob_client = BlobServiceClient.fromConnectionString(
+        blob_opts.connectionString
+      )
 
-        /*
+      /*
       const account = blob_opts.account
       const accountKey = blob_opts.key
       const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
@@ -89,12 +89,11 @@ async function blob_store(this: any, options: any) {
         sharedKeyCredential
       )
     */
-      }
-
-      reply()
     }
-  )
-  
+
+    reply()
+  })
+
   function get_container(ent: any) {
     let container: any = {}
 
@@ -333,7 +332,7 @@ async function blob_store(this: any, options: any) {
   }
 
   let meta = init(seneca, options, store)
-  
+
   seneca.message(
     'cloud:azure,service:store,get:url,kind:upload',
     {
@@ -341,7 +340,7 @@ async function blob_store(this: any, options: any) {
       filepath: String,
       expire: Number,
     },
-    getSignedUrl('w'),
+    getSignedUrl('w')
   )
 
   seneca.message(
@@ -351,26 +350,28 @@ async function blob_store(this: any, options: any) {
       filepath: String,
       expire: Number,
     },
-    getSignedUrl('r'),
+    getSignedUrl('r')
   )
 
   function getSignedUrl(permission: 'r' | 'w') {
-  
-    return async function(msg: any) {
+    return async function (msg: any) {
       const container = msg.container
       const filepath = msg.filepath
       const expire = msg.expire
-      
+
       const containerClient = blob_client.getContainerClient(container)
       const blob = containerClient.getBlobClient(filepath)
 
-      const sasToken = generateBlobSASQueryParameters({
-        containerName: container,
-        blobName: filepath,
-        permissions: BlobSASPermissions.parse(permission),
-        startsOn: new Date(),
-        expiresOn: new Date(expire),
-      }, blob_client.credential).toString()
+      const sasToken = generateBlobSASQueryParameters(
+        {
+          containerName: container,
+          blobName: filepath,
+          permissions: BlobSASPermissions.parse(permission),
+          startsOn: new Date(),
+          expiresOn: new Date(expire),
+        },
+        blob_client.credential
+      ).toString()
 
       const accessUrl = blob.url + '?' + sasToken
 
@@ -378,12 +379,11 @@ async function blob_store(this: any, options: any) {
         url: accessUrl,
         container,
         filepath,
-        expire
+        expire,
       }
     }
-    
   }
-  
+
   return {
     name: store.name,
     tag: meta.tag,
