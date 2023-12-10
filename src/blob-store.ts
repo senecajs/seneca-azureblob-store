@@ -9,7 +9,9 @@ import { DefaultAzureCredential } from '@azure/identity'
 
 import {
   BlobServiceClient,
-  StorageSharedKeyCredential,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions,
+  StorageSharedKeyCredential
 } from '@azure/storage-blob'
 
 blob_store.defaults = {
@@ -50,7 +52,49 @@ async function blob_store(this: any, options: any) {
     // Bucket: '!not-a-bucket!',
     // ...options.shared,
   }
+  
+  seneca.init(function (reply: () => void) {
+      // BLOB SDK setup
 
+      const blob_opts = {
+        ...options.blob,
+      }
+
+      if (options.local.active) {
+        let folder: string = options.local.folder
+        local_folder =
+          'genid' == options.local.suffixMode
+            ? folder + '-' + seneca.util.Nid()
+            : folder
+        return reply()
+      }
+
+      if ('local' == blob_opts.mode) {
+        const connectionString = `UseDevelopmentStorage=true; BlobEndpoint=${
+          blob_opts.endpoint || 'http://127.0.0.1:10000/devstoreaccount1'
+        }`
+        blob_client = BlobServiceClient.fromConnectionString(connectionString)
+      } else {
+        blob_client = BlobServiceClient.fromConnectionString(
+          blob_opts.connectionString
+        )
+
+        /*
+      const account = blob_opts.account
+      const accountKey = blob_opts.key
+      const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
+    
+      blob_client = new BlobServiceClient(
+        `https://${account}.blob.core.windows.net`,
+        sharedKeyCredential
+      )
+    */
+      }
+
+      reply()
+    }
+  )
+  
   function get_container(ent: any) {
     let container: any = {}
 
@@ -289,51 +333,57 @@ async function blob_store(this: any, options: any) {
   }
 
   let meta = init(seneca, options, store)
-
-  seneca.add(
-    { init: store.name, tag: meta.tag },
-    function (msg: any, reply: () => void) {
-      // BLOB SDK setup
-
-      const blob_opts = {
-        ...options.blob,
-      }
-
-      if (options.local.active) {
-        let folder: string = options.local.folder
-        local_folder =
-          'genid' == options.local.suffixMode
-            ? folder + '-' + seneca.util.Nid()
-            : folder
-        return reply()
-      }
-
-      if ('local' == blob_opts.mode) {
-        const connectionString = `UseDevelopmentStorage=true; BlobEndpoint=${
-          blob_opts.endpoint || 'http://127.0.0.1:10000/devstoreaccount1'
-        }`
-        blob_client = BlobServiceClient.fromConnectionString(connectionString)
-      } else {
-        blob_client = BlobServiceClient.fromConnectionString(
-          blob_opts.connectionString
-        )
-
-        /*
-      const account = blob_opts.account
-      const accountKey = blob_opts.key
-      const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey)
-    
-      blob_client = new BlobServiceClient(
-        `https://${account}.blob.core.windows.net`,
-        sharedKeyCredential
-      )
-    */
-      }
-
-      reply()
-    }
+  
+  seneca.message(
+    'cloud:azure,service:store,get:url,kind:upload',
+    {
+      container: String,
+      filepath: String,
+      expire: Number,
+    },
+    getSignedUrl('w'),
   )
 
+  seneca.message(
+    'cloud:azure,service:store,get:url,kind:download',
+    {
+      container: String,
+      filepath: String,
+      expire: Number,
+    },
+    getSignedUrl('r'),
+  )
+
+  function getSignedUrl(permission: 'r' | 'w') {
+  
+    return async function(msg: any) {
+      const container = msg.container
+      const filepath = msg.filepath
+      const expire = msg.expire
+      
+      const containerClient = blob_client.getContainerClient(container)
+      const blob = containerClient.getBlobClient(filepath)
+
+      const sasToken = generateBlobSASQueryParameters({
+        containerName: container,
+        blobName: filepath,
+        permissions: BlobSASPermissions.parse(permission),
+        startsOn: new Date(),
+        expiresOn: new Date(expire),
+      }, blob_client.credential).toString()
+
+      const accessUrl = blob.url + '?' + sasToken
+
+      return {
+        url: accessUrl,
+        container,
+        filepath,
+        expire
+      }
+    }
+    
+  }
+  
   return {
     name: store.name,
     tag: meta.tag,
