@@ -47,15 +47,20 @@ async function blob_store(this: any, options: any) {
 
   let generate_id = options.generate_id || seneca.export('entity/generate_id')
   let blob_client: any = null
+  let container_client: any = null
   let local_folder: string = ''
-  let blob_shared_options = {
-    // Bucket: '!not-a-bucket!',
-    // ...options.shared,
+  let blob_shared_options: any = {
+    Container: '!not-a-valid-container!',
+    ...options.shared,
   }
 
   seneca.init(function (reply: () => void) {
     // BLOB SDK setup
-
+    
+    const {
+      Container
+    } = blob_shared_options
+    
     const blob_opts = {
       ...options.blob,
     }
@@ -90,18 +95,16 @@ async function blob_store(this: any, options: any) {
       )
     */
     }
+    
+    async function load_container() {
+      container_client = await load_container_client(Container)
+      reply()
+    }
+    
+    load_container()
 
-    reply()
+    
   })
-
-  function get_container(ent: any) {
-    let container: any = {}
-
-    let canon = ent.canon$({ object: true })
-    container.name = (null != canon.base ? canon.base + '-' : '') + canon.name
-
-    return container
-  }
 
   async function load_container_client(name: string) {
     let container_client = blob_client.getContainerClient(name)
@@ -121,7 +124,6 @@ async function blob_store(this: any, options: any) {
       d.id = id
 
       let blob_id = make_blob_id(id, msg.ent, options)
-      let co = get_container(msg.ent)
 
       let Body: Buffer | undefined = undefined
       let entSpec = options.ent[canon]
@@ -189,7 +191,6 @@ async function blob_store(this: any, options: any) {
       }
 
       async function do_upload() {
-        let container_client = await load_container_client(co.name)
         let block_blob = container_client.getBlockBlobClient(blob_id)
         try {
           Body && (await block_blob.uploadData(Body, Body.length))
@@ -203,8 +204,7 @@ async function blob_store(this: any, options: any) {
       let canon = msg.ent.entity$
       let qent = msg.qent
       let id = '' + msg.q.id
-
-      const co = get_container(msg.ent)
+      
       let blob_id = make_blob_id(id, msg.ent, options)
 
       let entSpec = options.ent[canon]
@@ -258,7 +258,6 @@ async function blob_store(this: any, options: any) {
       }
 
       async function do_download() {
-        let container_client = await load_container_client(co.name)
         let block_blob = container_client.getBlockBlobClient(blob_id)
         try {
           // let body: any = await block_blob.downloadToBuffer()
@@ -283,8 +282,7 @@ async function blob_store(this: any, options: any) {
     remove: function (msg: any, reply: any) {
       let qent = msg.qent
       let qid = '' + msg.q.id
-
-      const co = get_container(msg.ent)
+      
       let blob_id = make_blob_id(qid, msg.ent, options)
 
       if (null == qid) {
@@ -310,7 +308,6 @@ async function blob_store(this: any, options: any) {
       }
 
       async function do_delete() {
-        let container_client = await load_container_client(co.name)
         let block_blob = container_client.getBlockBlobClient(blob_id)
         try {
           await block_blob.delete()
