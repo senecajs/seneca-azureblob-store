@@ -44,23 +44,24 @@ async function main() {
         mode: 'local',
         endpoint: 'http://127.0.0.1:10000/devstoreaccount1',
       },
+      shared: {
+        Container: containerName
+      }
     })
   await seneca.ready()
   
-  const expiryTime = new Date()
-  expiryTime.setMinutes(expiryTime.getMinutes() + 1)
 
   let dwn_url = await seneca.post('cloud:azure,service:store,get:url,kind:download', {
     container: containerName,
     filepath: blobName,
-    expire: expiryTime.getTime()
+    expire: 600 // seconds
   })
   
   
   let upl_url = await seneca.post('cloud:azure,service:store,get:url,kind:upload', {
     container: containerName,
     filepath: blobName,
-    expire: expiryTime.getTime()
+    expire: 600
   })
   
   console.log('download: ', dwn_url)

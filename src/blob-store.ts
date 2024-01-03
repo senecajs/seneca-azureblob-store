@@ -355,13 +355,16 @@ async function blob_store(this: any, options: any) {
       const containerClient = blob_client.getContainerClient(container)
       const blob = containerClient.getBlobClient(filepath)
 
+      const expiryTime = new Date()
+      expiryTime.setSeconds(expiryTime.getSeconds() + expire)
+
       const sasToken = generateBlobSASQueryParameters(
         {
           containerName: container,
           blobName: filepath,
           permissions: BlobSASPermissions.parse(permission),
           startsOn: new Date(),
-          expiresOn: new Date(expire),
+          expiresOn: expiryTime,
         },
         blob_client.credential
       ).toString()
