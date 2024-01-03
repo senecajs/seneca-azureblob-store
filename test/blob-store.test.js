@@ -32,7 +32,7 @@ lab.before(async function () {
       mode: 'local',
       endpoint: 'http://127.0.0.1:10000/devstoreaccount1',
     },
-    ...local_blob_shared
+    ...local_blob_shared,
   }
 
   // test_opts.seneca = Seneca({ require })
@@ -51,7 +51,7 @@ lab.test('happy', async function () {
       blob: {
         mode: 'local',
       },
-      ...local_blob_shared
+      ...local_blob_shared,
     })
 
   await s0.ready()
@@ -69,7 +69,7 @@ const local_opts = {
       folder: __dirname + '/blobfiles/data',
       suffixMode: 'genid',
     },
-    ...local_blob_shared
+    ...local_blob_shared,
   },
 }
 

@@ -56,11 +56,9 @@ async function blob_store(this: any, options: any) {
 
   seneca.init(function (reply: () => void) {
     // BLOB SDK setup
-    
-    const {
-      Container
-    } = blob_shared_options
-    
+
+    const { Container } = blob_shared_options
+
     const blob_opts = {
       ...options.blob,
     }
@@ -95,15 +93,13 @@ async function blob_store(this: any, options: any) {
       )
     */
     }
-    
+
     async function load_container() {
       container_client = await load_container_client(Container)
       reply()
     }
-    
-    load_container()
 
-    
+    load_container()
   })
 
   async function load_container_client(name: string) {
@@ -204,7 +200,7 @@ async function blob_store(this: any, options: any) {
       let canon = msg.ent.entity$
       let qent = msg.qent
       let id = '' + msg.q.id
-      
+
       let blob_id = make_blob_id(id, msg.ent, options)
 
       let entSpec = options.ent[canon]
@@ -282,7 +278,7 @@ async function blob_store(this: any, options: any) {
     remove: function (msg: any, reply: any) {
       let qent = msg.qent
       let qid = '' + msg.q.id
-      
+
       let blob_id = make_blob_id(qid, msg.ent, options)
 
       if (null == qid) {

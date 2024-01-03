@@ -1,3 +1,3 @@
 module.exports = {
-  shared: { Container: 'test-container' }
+  shared: { Container: 'test-container' },
 }
