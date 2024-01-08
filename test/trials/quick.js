@@ -7,6 +7,9 @@ const {
 } = require("@azure/storage-blob")
 
 
+// Test using curl:
+// curl "http://127.0.0.1:10000/devstoreaccount1/optent-color/seneca/db01/-/optent/color/dg7ld4.json?sv=2023-11-03&st=2023-12-08T16%3A35%3A29Z&se=2023-12-08T16%3A36%3A29Z&sr=b&sp=w&sig=OWFdklc37JmGyYWpiAHju8ff%2BNufxKxxGekBxZa%2BT2Q%3D" -T file.json -H "x-ms-blob-type: BlockBlob"
+
 function generateDownloadUri(connectionString, containerName, blobName) {
     const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString)
 

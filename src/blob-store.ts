@@ -110,6 +110,10 @@ async function blob_store(this: any, options: any) {
     }
     return container_client
   }
+  
+  async function container_check(name: string) {
+    container_client = await load_container_client(name)
+  }
 
   let store = {
     name: 'blob-store',
@@ -348,9 +352,12 @@ async function blob_store(this: any, options: any) {
 
   function getSignedUrl(permission: 'r' | 'w') {
     return async function (msg: any) {
+    
       const container = msg.container
       const filepath = msg.filepath
       const expire = msg.expire
+      
+      await container_check(container)
 
       const containerClient = blob_client.getContainerClient(container)
       const blob = containerClient.getBlobClient(filepath)
