@@ -209,6 +209,7 @@ lab.test('bin-blob-basic', async function () {
     ent: {
       '-/optent/planet': { bin: 'map' },
       '-/directive/planet': { bin: 'map' },
+      '-/directive/content': { bin: 'content' },
     },
   })
 
@@ -249,6 +250,14 @@ lab.test('bin-blob-basic', async function () {
     id: planet1.id,
     map: Buffer.from([1, 2, 3]),
   })
+
+  const content = 'actual content'
+  let foo0 = await s0
+    .entity('directive/content')
+    .save$({ bin$: 'content', content: () => content })
+  foo0 = await s0.entity('directive/content').load$(foo0.id)
+
+  expect(foo0.content.toString('utf-8')).equal(content)
 })
 
 lab.test('bin-local-basic', async function () {

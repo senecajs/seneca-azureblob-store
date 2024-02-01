@@ -149,11 +149,18 @@ async function blob_store(this: any, options: any) {
         }
         // Binary Files
         else if ('string' === typeof bin && '' !== bin) {
-          let data = msg.ent[bin]
-          if (null == data) {
+          let dataRef: any = msg.ent[bin]
+          if (null == dataRef) {
             throw new Error(
               'blob-store: option ent.bin data field not found: ' + bin
             )
+          }
+
+          let data = dataRef
+
+          // A function can be used to 'hide" very large data.
+          if ('function' === typeof dataRef) {
+            data = dataRef()
           }
 
           Body = Buffer.from(data)
