@@ -47,6 +47,7 @@
   },
   "peerDependencies": {
     "@azure/storage-blob": ">=12",
+    "@azure/identity": ">=4.9.1",
     "seneca": ">=3",
     "seneca-entity": ">=25",
     "seneca-promisify": ">=3"
