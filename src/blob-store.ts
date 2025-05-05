@@ -5,8 +5,6 @@ import Fsp from 'fs/promises'
 
 import { Default, Skip, Any, Exact, Child, Empty } from 'gubu'
 
-import { DefaultAzureCredential } from '@azure/identity'
-
 import {
   BlobServiceClient,
   generateBlobSASQueryParameters,
@@ -77,6 +75,15 @@ async function blob_store(this: any, options: any) {
         blob_opts.endpoint || 'http://127.0.0.1:10000/devstoreaccount1'
       }`
       blob_client = BlobServiceClient.fromConnectionString(connectionString)
+    } else if('auth_credential' == blob_opts.mode) {
+      const account = blob_opts.account
+      const auth = blob_opts.auth
+
+      blob_client = new BlobServiceClient(
+        `https://${account}.blob.core.windows.net`,
+         auth,
+      )
+
     } else {
       blob_client = BlobServiceClient.fromConnectionString(
         blob_opts.connectionString
