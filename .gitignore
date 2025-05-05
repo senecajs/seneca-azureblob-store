@@ -134,3 +134,5 @@ __azurite_db_blob_extent__.json
 __azurite_db_blob__.json
 __blobstorage__/
 test/blobfiles/
+
+*.swp
