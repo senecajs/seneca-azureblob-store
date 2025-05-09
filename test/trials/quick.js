@@ -3,8 +3,13 @@ const Seneca = require('seneca')
 const {
   BlobServiceClient,
   generateBlobSASQueryParameters,
-  BlobSASPermissions
+  BlobSASPermissions,
 } = require("@azure/storage-blob")
+
+const {
+  DefaultAzureCredential,
+  AzureCliCredential,
+} = require("@azure/identity")
 
 
 // Test using curl:
@@ -30,6 +35,47 @@ function generateDownloadUri(connectionString, containerName, blobName) {
     const downloadUrl = blobClient.url + "?" + sasToken
 
     return downloadUrl
+}
+
+async function main_delegationKey() {
+  let connectionString = `UseDevelopmentStorage=true; BlobEndpoint=${'http://127.0.0.1:10000/devstoreaccount1'}`
+    
+  const containerName = 'test-container01'
+  const blobName = 'folder01/text.log'
+  
+  const seneca = Seneca({ legacy: false })
+    .test()
+    .use('promisify')
+    .use('entity', { mem_store: false })
+    .use('./../../..', {
+      blob: {
+        mode: 'auth_credential',
+        account: 'alextest02',
+        auth: new DefaultAzureCredential(),
+      },
+      shared: {
+        Container: containerName
+      }
+    })
+  await seneca.ready()
+  
+
+  let dwn_url = await seneca.post('cloud:azure,service:store,get:url,kind:download', {
+    container: containerName,
+    filepath: blobName,
+    expire: 600 // seconds
+  })
+
+  console.log('delegation dwn_url: ', dwn_url)
+
+  // NOTE: REQUIRES the role assignment of 'Storage Blob Data Contributor'
+  let file_response = await fetch(dwn_url.url, {
+    method: 'GET'
+  })
+
+  console.log(file_response)
+
+
 }
 
 async function main() {
@@ -70,15 +116,11 @@ async function main() {
   console.log('download: ', dwn_url)
   console.log('upload: ', upl_url)
   
-  // let url = generateDownloadUri(connectionString, containerName, blobName)
+  let url = generateDownloadUri(connectionString, containerName, blobName)
   
 
-  // console.log(url)
+  console.log(url)
 
 
 }
-
-main()
-
-
 
