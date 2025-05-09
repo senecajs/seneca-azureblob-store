@@ -67,7 +67,7 @@ async function blob_store(this: any, options: any) {
         'genid' == options.local.suffixMode
           ? folder + '-' + seneca.util.Nid()
           : folder
-          return reply()
+      return reply()
     }
 
     if ('local' == blob_opts.mode) {
@@ -81,7 +81,7 @@ async function blob_store(this: any, options: any) {
 
       blob_client = new BlobServiceClient(
         `https://${account}.blob.core.windows.net`,
-          auth
+        auth
       )
     } else {
       blob_client = BlobServiceClient.fromConnectionString(
@@ -186,19 +186,19 @@ async function blob_store(this: any, options: any) {
 
         // console.log('dirname: ', path )
         Fsp.mkdir(path, { recursive: true })
-        .then((out: any) => {
-          Body &&
-            Fsp.writeFile(full, Body as any)
-          .then((_res: any) => {
-            reply(null, ento)
+          .then((out: any) => {
+            Body &&
+              Fsp.writeFile(full, Body as any)
+                .then((_res: any) => {
+                  reply(null, ento)
+                })
+                .catch((err: any) => {
+                  reply(err)
+                })
           })
           .catch((err: any) => {
             reply(err)
           })
-        })
-        .catch((err: any) => {
-          reply(err)
-        })
       } else {
         do_upload()
       }
@@ -238,9 +238,9 @@ async function blob_store(this: any, options: any) {
 
         if ('jsonl' === output) {
           entdata[jsonl] = body
-          .split('\n')
-          .filter((n: string) => '' !== n)
-          .map((n: string) => JSON.parse(n))
+            .split('\n')
+            .filter((n: string) => '' !== n)
+            .map((n: string) => JSON.parse(n))
         } else if ('bin' === output) {
           entdata[bin] = body
         } else {
@@ -257,15 +257,15 @@ async function blob_store(this: any, options: any) {
         let full: string = Path.join(local_folder, blob_id || id)
 
         Fsp.readFile(full)
-        .then((body: any) => {
-          replyEnt(body)
-        })
-        .catch((err: any) => {
-          if ('ENOENT' == err.code) {
-            return reply()
-          }
-          reply(err)
-        })
+          .then((body: any) => {
+            replyEnt(body)
+          })
+          .catch((err: any) => {
+            if ('ENOENT' == err.code) {
+              return reply()
+            }
+            reply(err)
+          })
       } else {
         do_download()
       }
@@ -307,15 +307,15 @@ async function blob_store(this: any, options: any) {
         let full: string = Path.join(local_folder, blob_id || qid)
 
         Fsp.unlink(full)
-        .then((_res: any) => {
-          reply()
-        })
-        .catch((err: any) => {
-          if ('ENOENT' == err.code) {
-            return reply()
-          }
-          reply(err)
-        })
+          .then((_res: any) => {
+            reply()
+          })
+          .catch((err: any) => {
+            if ('ENOENT' == err.code) {
+              return reply()
+            }
+            reply(err)
+          })
       } else {
         do_delete()
       }
@@ -368,7 +368,8 @@ async function blob_store(this: any, options: any) {
       const container = msg.container
       const filepath = msg.filepath
       const expire = msg.expire
-      let accessUrl = '', sasToken = ''
+      let accessUrl = '',
+        sasToken = ''
 
       await container_check(container)
 
@@ -379,8 +380,11 @@ async function blob_store(this: any, options: any) {
       const expiryTime = new Date(now.getTime())
       expiryTime.setSeconds(expiryTime.getSeconds() + expire)
 
-      if('auth_credential' == options.blob.mode) {
-        const userDelegationKey = await blob_client.getUserDelegationKey(now, expiryTime)
+      if ('auth_credential' == options.blob.mode) {
+        const userDelegationKey = await blob_client.getUserDelegationKey(
+          now,
+          expiryTime
+        )
 
         sasToken = generateBlobSASQueryParameters(
           {
@@ -393,8 +397,7 @@ async function blob_store(this: any, options: any) {
           userDelegationKey,
           options.blob.account
         ).toString()
-      }
-      else {
+      } else {
         sasToken = generateBlobSASQueryParameters(
           {
             containerName: container,
@@ -432,13 +435,13 @@ function make_blob_id(id: string, ent: any, options: any) {
     null == id
       ? null
       : (null == options.folder
-        ? options.prefix + ent.entity$
-        : options.folder) +
-          ('' == options.folder ? '' : '/') +
-          id +
-          options.suffix
+          ? options.prefix + ent.entity$
+          : options.folder) +
+        ('' == options.folder ? '' : '/') +
+        id +
+        options.suffix
 
-        return blobid
+  return blobid
 }
 
 async function destream(output: 'ent' | 'jsonl' | 'bin', readable: any) {
