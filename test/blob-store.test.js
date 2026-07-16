@@ -383,11 +383,14 @@ lab.test('get-url-does-not-corrupt-other-tagged-instance', async function () {
   await s0.entity('regress/a').remove$('regress-test.bin')
   await s0.entity('regress/b').remove$('regress-test.bin')
 
-  const urlRes = await s0.post('cloud:azure,service:store,get:url,kind:upload', {
-    container: 'test-container-regress-a',
-    filepath: 'unrelated.bin',
-    expire: 600,
-  })
+  const urlRes = await s0.post(
+    'cloud:azure,service:store,get:url,kind:upload',
+    {
+      container: 'test-container-regress-a',
+      filepath: 'unrelated.bin',
+      expire: 600,
+    }
+  )
   expect(urlRes.url).exists()
 
   // Save an entity that belongs to instance B. Before the fix, this could
