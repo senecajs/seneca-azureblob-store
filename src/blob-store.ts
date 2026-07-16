@@ -117,10 +117,6 @@ async function blob_store(this: any, options: any) {
     return container_client
   }
 
-  async function container_check(name: string) {
-    container_client = await load_container_client(name)
-  }
-
   let store = {
     name: 'blob-store',
     save: function (msg: any, reply: any) {
@@ -371,9 +367,7 @@ async function blob_store(this: any, options: any) {
       let accessUrl = '',
         sasToken = ''
 
-      await container_check(container)
-
-      const containerClient = blob_client.getContainerClient(container)
+      const containerClient = await load_container_client(container)
       const blob = containerClient.getBlobClient(filepath)
 
       const now = new Date()

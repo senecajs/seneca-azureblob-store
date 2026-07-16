@@ -341,6 +341,73 @@ lab.test('bin-local-customid', async function () {
   })
 })
 
+// Regression test for get:url not corrupting other tagged instances.
+lab.test('get-url-does-not-corrupt-other-tagged-instance', async function () {
+  const blob = {
+    mode: 'local',
+    endpoint: 'http://127.0.0.1:10000/devstoreaccount1',
+  }
+
+  const s0 = Seneca({ legacy: false })
+    .test()
+    .use('promisify')
+    .use('entity', { mem_store: false })
+    .use(
+      { name: 'blob-store$regress_a', init: Plugin },
+      {
+        prefix: '',
+        suffix: '',
+        folder: '',
+        map: { '-/regress/a': '*' },
+        ent: { '-/regress/a': { bin: 'content' } },
+        shared: { Container: 'test-container-regress-a' },
+        blob,
+      }
+    )
+    .use(
+      { name: 'blob-store$regress_b', init: Plugin },
+      {
+        prefix: '',
+        suffix: '',
+        folder: '',
+        map: { '-/regress/b': '*' },
+        ent: { '-/regress/b': { bin: 'content' } },
+        shared: { Container: 'test-container-regress-b' },
+        blob,
+      }
+    )
+
+  await s0.ready()
+
+  // Idempotent: remove any existing test files from both containers.
+  await s0.entity('regress/a').remove$('regress-test.bin')
+  await s0.entity('regress/b').remove$('regress-test.bin')
+
+  const urlRes = await s0.post('cloud:azure,service:store,get:url,kind:upload', {
+    container: 'test-container-regress-a',
+    filepath: 'unrelated.bin',
+    expire: 600,
+  })
+  expect(urlRes.url).exists()
+
+  // Save an entity that belongs to instance B. Before the fix, this could
+  // land in container A instead of container B.
+  const saved = await s0
+    .entity('regress/b')
+    .data$({ content: Buffer.from('instance-b-content') })
+    .save$({ id$: 'regress-test.bin' })
+
+  expect(saved.entity$).equal('-/regress/b')
+
+  const loadedB = await s0.entity('regress/b').load$('regress-test.bin')
+  expect(loadedB).exists()
+  expect(loadedB.content.toString('utf-8')).equal('instance-b-content')
+
+  // Prove it did not (also) land in container A under instance A's own canon.
+  const loadedA = await s0.entity('regress/a').load$('regress-test.bin')
+  expect(loadedA).not.exist()
+})
+
 function makeSeneca(blobopts) {
   return Seneca({ legacy: false })
     .test()
