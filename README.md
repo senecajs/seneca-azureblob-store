@@ -10,6 +10,10 @@
 | ![Voxgig](https://www.voxgig.com/res/img/vgt01r.png) | This open source module is sponsored and supported by [Voxgig](https://www.voxgig.com). |
 |---|---|
 
+Entity store using Azure Blob Storage.
+
+NOTE: not for arbitrary binaries, just for Seneca data entities.
+
 ## Install
 
 ```sh
