@@ -1,9 +1,9 @@
 ![Seneca](http://senecajs.org/files/assets/seneca-logo.png)
 > A [Seneca.js](http://senecajs.org) plugin
 
-# @seneca/azureblob-store
+# @seneca/azure-blob-store
 
-[![npm version](https://img.shields.io/npm/v/@seneca/azureblob-store.svg)](https://npmjs.com/package/@seneca/azureblob-store)
+[![npm version](https://img.shields.io/npm/v/@seneca/azure-blob-store.svg)](https://npmjs.com/package/@seneca/azure-blob-store)
 [![build](https://github.com/senecajs/seneca-azureblob-store/actions/workflows/build.yml/badge.svg)](https://github.com/senecajs/seneca-azureblob-store/actions/workflows/build.yml)
 [![Known Vulnerabilities](https://snyk.io/test/github/senecajs/seneca-azureblob-store/badge.svg)](https://snyk.io/test/github/senecajs/seneca-azureblob-store)
 
@@ -17,14 +17,14 @@ NOTE: not for arbitrary binaries, just for Seneca data entities.
 ## Install
 
 ```sh
-npm install @seneca/azureblob-store
+npm install @seneca/azure-blob-store
 ```
 
 ## Quick Example
 
 ```js
 require('seneca')()
-  .use('@seneca/azureblob-store')
+  .use('@seneca/azure-blob-store')
 ```
 
 ## More Examples
