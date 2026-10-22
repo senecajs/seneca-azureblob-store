@@ -14,17 +14,27 @@ Entity store using Azure Blob Storage.
 
 NOTE: not for arbitrary binaries, just for Seneca data entities.
 
+Works with Seneca 4 (tested with 4.0.0 and 4.0.0-rc5) and Seneca 3 from
+3.38 (with seneca-promisify). Seneca 4.0.0 requires Node.js 24 or later.
+
 ## Install
 
 ```sh
-npm install @seneca/azure-blob-store
+npm install @seneca/azure-blob-store @azure/storage-blob @azure/identity seneca @seneca/entity
 ```
+
+On Seneca 3 (3.38 or later) also install `seneca-promisify` and load it
+before this plugin (`.use('promisify')`).
 
 ## Quick Example
 
 ```js
 require('seneca')()
-  .use('@seneca/azure-blob-store')
+  .use('@seneca/entity', { mem_store: false })
+  .use('@seneca/azure-blob-store', {
+    blob: { connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING },
+    shared: { Container: 'my-container' },
+  })
 ```
 
 ## More Examples
@@ -53,7 +63,11 @@ The [Senecajs org](https://github.com/senecajs/) encourages open participation. 
 
 ### Running tests
 
+The tests use the azurite blob emulator (a development dependency) on
+port 10000. Start it in another terminal with `npm run start-blob`, then:
+
 ```sh
+npm run build
 npm run test
 ```
 
