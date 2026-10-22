@@ -3,8 +3,6 @@
 import Path from 'path'
 import Fsp from 'fs/promises'
 
-import { Default, Skip, Any, Exact, Child, Empty } from 'gubu'
-
 import {
   BlobServiceClient,
   generateBlobSASQueryParameters,
@@ -12,13 +10,13 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob'
 
-blob_store.defaults = {
-  prefix: Empty('seneca/db01/'),
-  suffix: Empty('.json'),
-  folder: Any(),
-  blob: Skip({}),
-  map: Skip({}),
-  shared: Skip({}),
+blob_store.defaults = ({ valid }: { valid: any }) => ({
+  prefix: valid.Empty('seneca/db01/'),
+  suffix: valid.Empty('.json'),
+  folder: valid.Any(),
+  blob: valid.Skip({}),
+  map: valid.Skip({}),
+  shared: valid.Skip({}),
 
   local: {
     active: false,
@@ -27,17 +25,17 @@ blob_store.defaults = {
   },
 
   // keys are canon strings
-  ent: Default(
+  ent: valid.Default(
     {},
-    Child({
+    valid.Child({
       // Save a sub array as JSONL. NOTE: Other fields are LOST!
-      jsonl: Skip(String),
+      jsonl: valid.Skip(String),
 
       // Save a sub field as binary. NOTE: Other fields are LOST!
-      bin: Skip(String),
+      bin: valid.Skip(String),
     })
   ),
-}
+})
 
 async function blob_store(this: any, options: any) {
   const seneca = this
