@@ -46,7 +46,7 @@ async function main_delegationKey() {
   const seneca = Seneca({ legacy: false })
     .test()
     .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
     .use('./../../..', {
       blob: {
         mode: 'auth_credential',
@@ -87,7 +87,7 @@ async function main() {
   const seneca = Seneca({ legacy: false })
     .test()
     .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
     .use('./../../..', {
       blob: {
         mode: 'local',
