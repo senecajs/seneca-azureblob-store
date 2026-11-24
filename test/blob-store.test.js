@@ -6,7 +6,7 @@ const LOCAL = 'true' !== process.env.SENECA_TEST_LIVE_BLOB_STORE
 const Fs = require('fs')
 
 const Seneca = require('seneca')
-const Shared = require('seneca-store-test')
+const Shared = require('@seneca/store-test')
 
 const Lab = require('@hapi/lab')
 const Code = require('@hapi/code')
@@ -38,15 +38,13 @@ lab.before(async function () {
   // test_opts.seneca = Seneca({ require })
   test_opts.seneca = Seneca({ legacy: false })
     .test()
-    .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
 })
 
 lab.test('happy', async function () {
   let s0 = Seneca({ legacy: false })
     .test()
-    .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
     .use(Plugin, {
       blob: {
         mode: 'local',
@@ -76,8 +74,7 @@ const local_opts = {
 lab.before(async function () {
   local_opts.seneca = Seneca({ legacy: false })
     .test()
-    .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
 })
 
 Shared.test.init(lab, local_opts)
@@ -93,8 +90,7 @@ lab.test('jsonl-blob', async function () {
 
   let s0 = Seneca({ legacy: false })
     .test()
-    .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
     .use(Plugin, options)
 
   let color0 = await s0.entity('optent/color').save$({
@@ -167,8 +163,7 @@ lab.test('jsonl-local-basic', async function () {
 
   let s0 = Seneca({ legacy: false })
     .test()
-    .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
     .use(Plugin, options)
 
   let color0 = await s0.entity('optent/color').save$({
@@ -215,8 +210,7 @@ lab.test('bin-blob-basic', async function () {
 
   let s0 = Seneca({ legacy: false })
     .test()
-    .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
     .use(Plugin, options)
 
   let planet0 = await s0.entity('optent/planet').save$({
@@ -275,8 +269,7 @@ lab.test('bin-local-basic', async function () {
 
   let s0 = Seneca({ legacy: false })
     .test()
-    .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
     .use(Plugin, options)
 
   let planet0 = await s0.entity('optent/planet').save$({
@@ -350,10 +343,9 @@ lab.test('get-url-does-not-corrupt-other-tagged-instance', async function () {
 
   const s0 = Seneca({ legacy: false })
     .test()
-    .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
     .use(
-      { name: 'blob-store$regress_a', init: Plugin },
+      { name: 'blob-store$regress_a', define: Plugin },
       {
         prefix: '',
         suffix: '',
@@ -365,7 +357,7 @@ lab.test('get-url-does-not-corrupt-other-tagged-instance', async function () {
       }
     )
     .use(
-      { name: 'blob-store$regress_b', init: Plugin },
+      { name: 'blob-store$regress_b', define: Plugin },
       {
         prefix: '',
         suffix: '',
@@ -414,7 +406,6 @@ lab.test('get-url-does-not-corrupt-other-tagged-instance', async function () {
 function makeSeneca(blobopts) {
   return Seneca({ legacy: false })
     .test()
-    .use('promisify')
-    .use('entity', { mem_store: false })
+    .use('@seneca/entity', { mem_store: false })
     .use(Plugin, blobopts)
 }
